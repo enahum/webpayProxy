@@ -32,6 +32,19 @@ class Transactionmodel extends CI_Model {
         }
     }
 
+    public function get_by_session($id) {
+        $rows = array();
+        $query = $this->db->get_where('transactions', array('sessionId' => $id));
+        if($query->num_rows() > 0){
+            foreach ($query->result() as $row) {
+                $rows[] = $row;
+            }
+            return $rows;
+        } else {
+            return null;
+        }
+    }
+
     public function get_by_token($token) {
         $query = $this->db->get_where('transactions', array('token_ws' => $token));
         if($query->num_rows() > 0){

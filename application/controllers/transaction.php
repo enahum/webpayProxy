@@ -105,7 +105,7 @@ class Transaction extends CI_Controller {
                 $transactionResultOutput = $getTransactionResultResponse->return;
                 $json = json_encode($transactionResultOutput);
                 $this->transactionmodel->set_response($token, $json);
-                if($transactionResultOutput->responseCode == '0') {
+                if($transactionResultOutput->detailOutput->responseCode == '0') {
                     $this->transactionmodel->set_paid($token);
                 }
                 echo $json;
