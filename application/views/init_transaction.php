@@ -9,7 +9,7 @@
     <input type='hidden' name='token_ws' value='<?= $token; ?>'>
     <?php if(isset($error)): ?>
         <input type="hidden" name="error" id="error" value="<?= $error ?>" />
-        <input type="hidden" name="sessionId" id="sessionId" value="<?= sessionId ?>" />
+        <input type="hidden" name="sessionId" id="sessionId" value="<?= $sessionId ?>" />
     <?php endif ?>
 </form>
 
