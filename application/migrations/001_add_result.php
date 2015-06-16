@@ -22,6 +22,30 @@ class Migration_Add_result extends CI_Migration
                 'unsigned' => TRUE,
                 'null' => FALSE
             ),
+            'initRequest' => array(
+                'type' => 'TEXT',
+                'null' => TRUE,
+            ),
+            'initResponse' => array(
+                'type' => 'TEXT',
+                'null' => TRUE,
+            ),
+            'resultRequest' => array(
+                'type' => 'TEXT',
+                'null' => TRUE,
+            ),
+            'resultResponse' => array(
+                'type' => 'TEXT',
+                'null' => TRUE,
+            ),
+            'akwRequest' => array(
+                'type' => 'TEXT',
+                'null' => TRUE,
+            ),
+            'akwResponse' => array(
+                'type' => 'TEXT',
+                'null' => TRUE,
+            ),
             'token_ws' => array(
                 'type' => 'VARCHAR',
                 'constraint' => '100',
@@ -29,7 +53,7 @@ class Migration_Add_result extends CI_Migration
             ),
             'request' => array(
                 'type' => 'TEXT',
-                'null' => FALSE,
+                'null' => TRUE,
             ),
             'response' => array(
                 'type' => 'TEXT',

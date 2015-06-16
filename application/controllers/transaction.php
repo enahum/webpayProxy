@@ -32,6 +32,8 @@ class Transaction extends CI_Controller {
             $wsTransactionDetail->amount = $post['amount'];
             $wsInitTransactionInput->transactionDetails = $wsTransactionDetail;
 
+            $this->transactionmodel->log_init_request($post['sessionId'], json_encode($wsInitTransactionInput));
+
             $initTransactionResponse = $this->webpayservice->initTransaction(
                 array("wsInitTransactionInput" => $wsInitTransactionInput)
             );
@@ -44,6 +46,7 @@ class Transaction extends CI_Controller {
 
             if ($validationResult) {
                 $wsInitTransactionOutput = $initTransactionResponse->return;
+                $this->transactionmodel->log_init_response($post['sessionId'], json_encode($initTransactionResponse));
                 $request = array(
                     'transaction_type' => 'TR_NORMAL_WS',
                     'sessionId' => $post['sessionId'],
@@ -94,6 +97,7 @@ class Transaction extends CI_Controller {
         try {
             $getTransactionResult = new getTransactionResult();
             $getTransactionResult->tokenInput = $token;
+            $this->transactionmodel->log_result_request($token, json_encode($getTransactionResult));
             $getTransactionResultResponse = $this->webpayservice->getTransactionResult(
                 $getTransactionResult);
             $xmlResponse = $this->webpayservice->soapClient->__getLastResponse();
@@ -102,6 +106,7 @@ class Transaction extends CI_Controller {
 
             $validationResult = $this->soapvalidation->getValidationResult();
             if($validationResult) {
+                $this->transactionmodel->log_result_response($token, json_encode($getTransactionResultResponse));
                 $transactionResultOutput = $getTransactionResultResponse->return;
                 $json = json_encode($transactionResultOutput);
                 $this->transactionmodel->set_response($token, $json);
@@ -133,6 +138,7 @@ class Transaction extends CI_Controller {
                 if(!$this->transactionmodel->is_paid_by_session($result->sessionId)) {
                     $acknowledgeTransaction = new acknowledgeTransaction();
                     $acknowledgeTransaction->tokenInput = $token;
+                    $this->transactionmodel->log_akw_request($token, json_encode($acknowledgeTransaction));
                     $acknowledgeTransactionResponse = $this->webpayservice->acknowledgeTransaction(
                         $acknowledgeTransaction);
                     $xmlResponse = $this->webpayservice->soapClient->__getLastResponse();
@@ -141,6 +147,7 @@ class Transaction extends CI_Controller {
 
                     $validationResult = $this->soapvalidation->getValidationResult();
                     if ($validationResult) {
+                        $this->transactionmodel->log_awk_response($token, json_encode($acknowledgeTransactionResponse));
                         $this->transactionmodel->set_acknowledge($token);
                     }
                     else {

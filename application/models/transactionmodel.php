@@ -54,17 +54,73 @@ class Transactionmodel extends CI_Model {
         }
     }
 
-    public function insert($id, $token, $request)
-    {
+    public function log_init_request($id, $initRequest) {
         $data = array(
             'date' => date("Y-m-d H:i:s", time()),
             'sessionId' => $id,
-            'token_ws' => $token,
-            'request' => $request
+            'initRequest' => $initRequest
         );
 
         $this->db->insert('transactions', $data);
     }
+
+    public function log_init_response($id, $initResponse) {
+        $data = array(
+            'initResponse' => $initResponse
+        );
+
+        $this->db->where('sessionId', $id);
+        $this->db->update('transactions', $data);
+    }
+
+    public function insert($id, $token, $request)
+    {
+        $data = array(
+            'token_ws' => $token,
+            'request' => $request
+        );
+
+        $this->db->where('sessionId', $id);
+        $this->db->update('transactions', $data);
+
+    }
+
+    public function log_result_request($token, $resultRequest) {
+        $data = array(
+            'resultRequest' => $resultRequest
+        );
+
+        $this->db->where('token_ws', $token);
+        $this->db->update('transactions', $data);
+    }
+
+    public function log_result_response($token, $resultResponse) {
+        $data = array(
+            'resultResponse' => $resultResponse
+        );
+
+        $this->db->where('token_ws', $token);
+        $this->db->update('transactions', $data);
+    }
+
+    public function log_akw_request($token, $akwRequest) {
+        $data = array(
+            'akwRequest' => $akwRequest
+        );
+
+        $this->db->where('token_ws', $token);
+        $this->db->update('transactions', $data);
+    }
+
+    public function log_awk_response($token, $akwResponse) {
+        $data = array(
+            'akwResponse' => $akwResponse
+        );
+
+        $this->db->where('token_ws', $token);
+        $this->db->update('transactions', $data);
+    }
+
 
     public function set_response($token, $response) {
         $data = array(
