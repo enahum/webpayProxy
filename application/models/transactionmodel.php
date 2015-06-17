@@ -62,6 +62,7 @@ class Transactionmodel extends CI_Model {
         );
 
         $this->db->insert('transactions', $data);
+        return $this->db->insert_id();
     }
 
     public function log_init_response($id, $initResponse) {
@@ -69,7 +70,7 @@ class Transactionmodel extends CI_Model {
             'initResponse' => $initResponse
         );
 
-        $this->db->where('sessionId', $id);
+        $this->db->where('Id', $id);
         $this->db->update('transactions', $data);
     }
 
@@ -80,7 +81,7 @@ class Transactionmodel extends CI_Model {
             'request' => $request
         );
 
-        $this->db->where('sessionId', $id);
+        $this->db->where('Id', $id);
         $this->db->update('transactions', $data);
 
     }

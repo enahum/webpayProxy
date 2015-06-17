@@ -32,7 +32,7 @@ class Transaction extends CI_Controller {
             $wsTransactionDetail->amount = $post['amount'];
             $wsInitTransactionInput->transactionDetails = $wsTransactionDetail;
 
-            $this->transactionmodel->log_init_request($post['sessionId'], json_encode($wsInitTransactionInput));
+            $id = $this->transactionmodel->log_init_request($post['sessionId'], json_encode($wsInitTransactionInput));
 
             $initTransactionResponse = $this->webpayservice->initTransaction(
                 array("wsInitTransactionInput" => $wsInitTransactionInput)
@@ -46,7 +46,7 @@ class Transaction extends CI_Controller {
 
             if ($validationResult) {
                 $wsInitTransactionOutput = $initTransactionResponse->return;
-                $this->transactionmodel->log_init_response($post['sessionId'], json_encode($initTransactionResponse));
+                $this->transactionmodel->log_init_response($id, json_encode($initTransactionResponse));
                 $request = array(
                     'transaction_type' => 'TR_NORMAL_WS',
                     'sessionId' => $post['sessionId'],
@@ -59,7 +59,7 @@ class Transaction extends CI_Controller {
                     )
                 );
 
-                $this->transactionmodel->insert($post['sessionId'], $wsInitTransactionOutput->token, json_encode($request));
+                $this->transactionmodel->insert($id, $wsInitTransactionOutput->token, json_encode($request));
 
                 $data = array(
                     'url' => $wsInitTransactionOutput->url,
