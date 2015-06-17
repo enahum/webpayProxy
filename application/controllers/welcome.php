@@ -17,15 +17,17 @@ class Welcome extends CI_Controller {
 	 * map to /index.php/welcome/<method_name>
 	 * @see http://codeigniter.com/user_guide/general/urls.html
 	 */
-	public function index()
-	{
-		$this->load->library('migration');
+    public function index()
+    {
+        $this->load->library('migration');
 
-		if ( ! $this->migration->current())
-		{
-			show_error($this->migration->error_string());
-		}
-	}
+        if ( ! $this->migration->current())
+        {
+            show_error($this->migration->error_string());
+        } else {
+            $this->load->view('welcome_message');
+        }
+    }
 
 }
 

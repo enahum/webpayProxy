@@ -24,6 +24,8 @@ class Migrate extends CI_Controller {
         if ( ! $this->migration->current())
         {
             show_error($this->migration->error_string());
+        } else {
+            $this->load->view('welcome_message');
         }
     }
 
