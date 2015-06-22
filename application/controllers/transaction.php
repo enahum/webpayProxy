@@ -113,6 +113,26 @@ class Transaction extends CI_Controller {
                 if($transactionResultOutput->detailOutput->responseCode == '0') {
                     $this->transactionmodel->set_paid($token);
                 }
+
+                $acknowledgeTransaction = new acknowledgeTransaction();
+                $acknowledgeTransaction->tokenInput = $token;
+                $this->transactionmodel->log_akw_request($token, json_encode($acknowledgeTransaction));
+                $acknowledgeTransactionResponse = $this->webpayservice->acknowledgeTransaction(
+                    $acknowledgeTransaction);
+                $xmlResponse = $this->webpayservice->soapClient->__getLastResponse();
+                $params = array('xmlSoap' => $xmlResponse, 'certServerPath' => SERVER_CERT);
+                $this->load->library('SoapValidation', $params);
+
+                $validationResult = $this->soapvalidation->getValidationResult();
+                if ($validationResult) {
+                    $this->transactionmodel->log_awk_response($token, json_encode($acknowledgeTransactionResponse));
+                    $this->transactionmodel->set_acknowledge($token);
+                }
+                else {
+                    echo $this->errorHandler($token, 'Transacción no autorizada por Transbank');
+                    return;
+                }
+
                 echo $json;
                 return;
             } else {
@@ -134,34 +154,12 @@ class Transaction extends CI_Controller {
         $result = $this->transactionmodel->get_by_token($token);
 
         if($result != null) {
-            if($result->acknowledge == 'f') {
-                if(!$this->transactionmodel->is_paid_by_session($result->sessionId)) {
-                    $acknowledgeTransaction = new acknowledgeTransaction();
-                    $acknowledgeTransaction->tokenInput = $token;
-                    $this->transactionmodel->log_akw_request($token, json_encode($acknowledgeTransaction));
-                    $acknowledgeTransactionResponse = $this->webpayservice->acknowledgeTransaction(
-                        $acknowledgeTransaction);
-                    $xmlResponse = $this->webpayservice->soapClient->__getLastResponse();
-                    $params = array('xmlSoap' => $xmlResponse, 'certServerPath' => SERVER_CERT);
-                    $this->load->library('SoapValidation', $params);
-
-                    $validationResult = $this->soapvalidation->getValidationResult();
-                    if ($validationResult) {
-                        $this->transactionmodel->log_awk_response($token, json_encode($acknowledgeTransactionResponse));
-                        $this->transactionmodel->set_acknowledge($token);
-                    }
-                    else {
-                        echo $this->errorHandler($token, 'Transacción no autorizada por Transbank');
-                        return;
-                    }
-                }
-                else {
-                    echo $this->errorHandler($token, 'Esta orden de compra ya fue pagada.');
-                    return;
-                }
+            if($result->acknowledge == 't') {
+                echo $result->response;
             }
-
-            echo $result->response;
+            else {
+                echo json_encode(null);
+            }
         }
         else {
             echo json_encode(null);

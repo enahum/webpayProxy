@@ -6,6 +6,7 @@
     <link href="/css/process.css" rel="stylesheet">
 </head>
 <body>
+<h1>Pagina de transición</h1>
 <input type="hidden" id="token_ws" name="token_ws" value="<?= $token ?>" />
 <div id="wpcontenedor">
     <div id="wpcabecera">
@@ -18,7 +19,7 @@
         <div id="wpprincipal">
             <div id="wpproceso"><img src="https://webpay3g.transbank.cl/webpayserver/imagenes/barracargadora.gif"  alt="barra" />
                 <br />
-                <p class="Estilo7">Su transacci&oacute;n est&aacute; siendo procesada...</p>
+                <p class="Estilo7">Su transacci&oacute;n est&aacute; siendo procesada por WebPay...</p>
             </div>
         </div>
     </div>
