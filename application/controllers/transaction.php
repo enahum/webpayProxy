@@ -9,75 +9,63 @@ class Transaction extends CI_Controller {
         $this->load->model('transactionmodel');
         $post = $this->input->post(NULL, TRUE);
 
-        if($this->transactionmodel->is_paid_by_session($post['sessionId'])) {
-            $data = array(
-                'error' => 'Esta orden de compra ya fue pagada.',
+        $wsInitTransactionInput = new wsInitTransactionInput();
+        $wsTransactionDetail = new wsTransactionDetail();
+
+        $wsInitTransactionInput->wSTransactionType = 'TR_NORMAL_WS';
+        $wsInitTransactionInput->sessionId = $post['sessionId'];
+        $wsInitTransactionInput->returnURL = $this->config->base_url('transaction/process');
+        $wsInitTransactionInput->finalURL = $post['finalUrl'];
+        $wsTransactionDetail->commerceCode = COMMERCE_ID;
+        $wsTransactionDetail->buyOrder = $post['buyOrder'];
+        $wsTransactionDetail->amount = $post['amount'];
+        $wsInitTransactionInput->transactionDetails = $wsTransactionDetail;
+
+        $id = $this->transactionmodel->log_init_request($post['sessionId'], json_encode($wsInitTransactionInput));
+
+        $initTransactionResponse = $this->webpayservice->initTransaction(
+            array("wsInitTransactionInput" => $wsInitTransactionInput)
+        );
+        $xmlResponse = $this->webpayservice->soapClient->__getLastResponse();
+        $params = array('xmlSoap' => $xmlResponse, 'certServerPath' => SERVER_CERT);
+        $this->load->library('SoapValidation', $params);
+
+        $validationResult = $this->soapvalidation->getValidationResult();
+        /*Invocar sólo sí $validationResult es TRUE*/
+
+        if ($validationResult) {
+            $wsInitTransactionOutput = $initTransactionResponse->return;
+            $this->transactionmodel->log_init_response($id, json_encode($initTransactionResponse));
+            $request = array(
+                'transaction_type' => 'TR_NORMAL_WS',
                 'sessionId' => $post['sessionId'],
-                'url' => $post['finalUrl']
+                'returnUrl' => $this->config->base_url('transaction/process'),
+                'finalUrl' => $post['finalUrl'],
+                'transactionDetail' => array(
+                    'commerceCode' => COMMERCE_ID,
+                    'buyOrder' => $post['buyOrder'],
+                    'amount' => $post['amount']
+                )
+            );
+
+            $this->transactionmodel->insert($id, $wsInitTransactionOutput->token, json_encode($request));
+
+            $data = array(
+                'url' => $wsInitTransactionOutput->url,
+                'token' => $wsInitTransactionOutput->token
             );
 
             $this->load->view('init_transaction', $data);
 
         }
         else {
-            $wsInitTransactionInput = new wsInitTransactionInput();
-            $wsTransactionDetail = new wsTransactionDetail();
-
-            $wsInitTransactionInput->wSTransactionType = 'TR_NORMAL_WS';
-            $wsInitTransactionInput->sessionId = $post['sessionId'];
-            $wsInitTransactionInput->returnURL = $this->config->base_url('transaction/process');
-            $wsInitTransactionInput->finalURL = $post['finalUrl'];
-            $wsTransactionDetail->commerceCode = COMMERCE_ID;
-            $wsTransactionDetail->buyOrder = $post['buyOrder'];
-            $wsTransactionDetail->amount = $post['amount'];
-            $wsInitTransactionInput->transactionDetails = $wsTransactionDetail;
-
-            $id = $this->transactionmodel->log_init_request($post['sessionId'], json_encode($wsInitTransactionInput));
-
-            $initTransactionResponse = $this->webpayservice->initTransaction(
-                array("wsInitTransactionInput" => $wsInitTransactionInput)
+            $data = array(
+                'error' => 'Transacción no autorizada por Transbank',
+                'sessionId' => $post['sessionId'],
+                'url' => $post['finalUrl']
             );
-            $xmlResponse = $this->webpayservice->soapClient->__getLastResponse();
-            $params = array('xmlSoap' => $xmlResponse, 'certServerPath' => SERVER_CERT);
-            $this->load->library('SoapValidation', $params);
 
-            $validationResult = $this->soapvalidation->getValidationResult();
-            /*Invocar sólo sí $validationResult es TRUE*/
-
-            if ($validationResult) {
-                $wsInitTransactionOutput = $initTransactionResponse->return;
-                $this->transactionmodel->log_init_response($id, json_encode($initTransactionResponse));
-                $request = array(
-                    'transaction_type' => 'TR_NORMAL_WS',
-                    'sessionId' => $post['sessionId'],
-                    'returnUrl' => $this->config->base_url('transaction/process'),
-                    'finalUrl' => $post['finalUrl'],
-                    'transactionDetail' => array(
-                        'commerceCode' => COMMERCE_ID,
-                        'buyOrder' => $post['buyOrder'],
-                        'amount' => $post['amount']
-                    )
-                );
-
-                $this->transactionmodel->insert($id, $wsInitTransactionOutput->token, json_encode($request));
-
-                $data = array(
-                    'url' => $wsInitTransactionOutput->url,
-                    'token' => $wsInitTransactionOutput->token
-                );
-
-                $this->load->view('init_transaction', $data);
-
-            }
-            else {
-                $data = array(
-                    'error' => 'Transacción no autorizada por Transbank',
-                    'sessionId' => $post['sessionId'],
-                    'url' => $post['finalUrl']
-                );
-
-                $this->load->view('init_transaction', $data);
-            }
+            $this->load->view('init_transaction', $data);
         }
     }
 
@@ -110,6 +98,19 @@ class Transaction extends CI_Controller {
                 $transactionResultOutput = $getTransactionResultResponse->return;
                 $json = json_encode($transactionResultOutput);
                 $this->transactionmodel->set_response($token, $json);
+                $exists = $this->transactionmodel->get_by_token($token);
+                if($this->transactionmodel->is_paid_by_session($exists->sessionId)) {
+
+                    $data = array(
+                        'error' => 'Esta orden de compra ya fue pagada.',
+                        'sessionId' => $exists->sessionId,
+                        'finalUrl' => json_decode($exists->initRequest)->finalURL
+                    );
+
+                    echo json_encode($data);
+                    return;
+                }
+
                 if($transactionResultOutput->detailOutput->responseCode == '0') {
                     $this->transactionmodel->set_paid($token);
                 }
@@ -124,11 +125,11 @@ class Transaction extends CI_Controller {
                 $this->load->library('SoapValidation', $params);
 
                 $validationResult = $this->soapvalidation->getValidationResult();
+
                 if ($validationResult) {
                     $this->transactionmodel->log_awk_response($token, json_encode($acknowledgeTransactionResponse));
                     $this->transactionmodel->set_acknowledge($token);
-                }
-                else {
+                } else {
                     echo $this->errorHandler($token, 'Transacción no autorizada por Transbank');
                     return;
                 }
